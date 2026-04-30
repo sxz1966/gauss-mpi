@@ -69,6 +69,41 @@ float* aligned_alloc_float(size_t n) {
 }
 
 //添加对齐部分的代码
+// 对齐版本的高斯消去（与 gauss_simd_neon 完全相同，但数据来自对齐内存）
+void gauss_simd_neon_aligned(float* A, float* b, int n) {
+    // 前向消去
+    for (int k = 0; k < n; ++k) {
+        float pivot = A[k * n + k];
+        for (int i = k + 1; i < n; ++i) {
+            float factor = A[i * n + k] / pivot;
+            float32x4_t v_factor = vdupq_n_f32(factor);
+            int j = k + 1;
+            for (; j <= n - 4; j += 4) {
+                float32x4_t v_Ai = vld1q_f32(&A[i * n + j]);
+                float32x4_t v_Ak = vld1q_f32(&A[k * n + j]);
+                float32x4_t v_res = vmlsq_f32(v_Ai, v_factor, v_Ak);
+                vst1q_f32(&A[i * n + j], v_res);
+            }
+            for (; j < n; ++j) {
+                A[i * n + j] -= factor * A[k * n + j];
+            }
+            b[i] -= factor * b[k];
+            A[i * n + k] = 0.0f;
+        }
+    }
+    // 回代
+    std::vector<float> x(n);
+    for (int i = n - 1; i >= 0; --i) {
+        float sum = b[i];
+        for (int j = i + 1; j < n; ++j) {
+            sum -= A[i * n + j] * x[j];
+        }
+        x[i] = sum / A[i * n + i];
+    }
+    for (int i = 0; i < n; ++i) {
+        b[i] = x[i];
+    }
+}
 
 // ---------- 串行高斯消去（单精度） ----------
 void gauss_serial(float* A, float* b, int n) {
