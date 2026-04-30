@@ -176,6 +176,8 @@ void gauss_simd_neon(float* A, float* b, int n) {
         b[i] = x[i];
     }
 }
+
+
 // ---------- NEON SIMD 高斯消去 版本B：同时向量化除法和消去 ----------
 void gauss_simd_neon_v2(float* A, float* b, int n) {
     // 临时数组存储 factor
