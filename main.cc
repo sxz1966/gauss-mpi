@@ -209,7 +209,7 @@ void gauss_simd_neon_v2(float* A, float* b, int n) {
             factor_array[i] = A[i * n + k] / pivot;
         }
 
-        // ----- 阶段2：向量化消去（与版本A相同，但factor从数组读取）-----
+        // ----- 阶段2：向量化消去（与版本A相同，但从数组读取factor）-----
         for (int i = k + 1; i < n; ++i) {
             float factor = factor_array[i];
             float32x4_t v_factor = vdupq_n_f32(factor);
