@@ -334,7 +334,7 @@ int main(int argc, char* argv[]) {
 
     // -------------------- 模式1：串行 vs SIMD-A vs SIMD-B（多规模自动表格）--------------------
     
-    /*
+    
     std::vector<int> sizes = {512, 1024, 2048};
     std::cout << "\n===============================================================================\n";
     std::cout << "  Gaussian Elimination Final Benchmark (Serial vs SIMD-A vs SIMD-B)\n";
@@ -373,7 +373,7 @@ int main(int argc, char* argv[]) {
     }
     std::cout << "===============================================================================\n";
     return 0;
-    */
+    
 
     // -------------------- 模式2：对齐 vs 不对齐（单独测试，固定规模 1024）--------------------
     
@@ -437,14 +437,14 @@ int main(int argc, char* argv[]) {
     //
     */
     // -------------------- 模式5：perf SIMD-A（仅消去向量化，不对齐）--------------------
-    
+    /*
     std::vector<float> A_simd = data.A;
     std::vector<float> b_simd = data.b;
     gauss_simd_neon(A_simd.data(), b_simd.data(), n);
     std::cout << "SIMD-A done. Error: " << std::scientific << compute_max_error(b_simd, data.x_true) << "\n";
     return 0;
     //
-     
+     */
     // -------------------- 模式6：perf SIMD-B（除法+消去均向量化）--------------------
     /*
     std::vector<float> A_v2 = data.A;
@@ -455,7 +455,7 @@ int main(int argc, char* argv[]) {
     //
     */
     // -------------------- 模式7： perf SIMD-对齐（对齐内存分配）--------------------
-    
+    /*
     float* A_al = aligned_alloc_float(n * n);
     float* b_al = aligned_alloc_float(n);
     std::memcpy(A_al, data.A.data(), n * n * sizeof(float));
@@ -468,6 +468,7 @@ int main(int argc, char* argv[]) {
     free(b_al);
     return 0;
     //
+    */
         // -------------------- 模式8： perf 专用（分块优化，固定块大小）--------------------
     
     /*
