@@ -243,9 +243,71 @@ void gauss_simd_neon_v2(float* A, float* b, int n) {
     }
 }
 
-// ---------- 分块优化版本 ----------
+// ---------- 分块优化版本 --------//
+void gauss_blocked_simd(float* A, float* b, int n, int block_size) {
+    // 前向消去（分块）
+    for (int kk = 0; kk < n; kk += block_size) {
+        int k_end = std::min(kk + block_size, n);
+        
+        // 1. 对当前对角块进行标准消去
+        for (int k = kk; k < k_end; ++k) {
+            float pivot = A[k * n + k];
+            for (int i = k + 1; i < k_end; ++i) {
+                float factor = A[i * n + k] / pivot;
+                float32x4_t v_factor = vdupq_n_f32(factor);
+                int j = k + 1;
+                for (; j <= n - 4; j += 4) {
+                    float32x4_t v_Ai = vld1q_f32(&A[i * n + j]);
+                    float32x4_t v_Ak = vld1q_f32(&A[k * n + j]);
+                    float32x4_t v_res = vmlsq_f32(v_Ai, v_factor, v_Ak);
+                    vst1q_f32(&A[i * n + j], v_res);
+                }
+                for (; j < n; ++j) {
+                    A[i * n + j] -= factor * A[k * n + j];
+                }
+                b[i] -= factor * b[k];
+                A[i * n + k] = 0.0f;
+            }
+        }
+        
+        // 2. 更新右侧剩余列块,
+        for (int k = kk; k < k_end; ++k) {
+            float pivot = A[k * n + k];
 
+            for (int i = k_end; i < n; ++i) {
+                float factor = A[i * n + k] / pivot;
+                float32x4_t v_factor = vdupq_n_f32(factor);
+                int j = k_end;
+                for (; j <= n - 4; j += 4) {
+                    float32x4_t v_Ai = vld1q_f32(&A[i * n + j]);
+                    float32x4_t v_Ak = vld1q_f32(&A[k * n + j]);
+                    float32x4_t v_res = vmlsq_f32(v_Ai, v_factor, v_Ak);
+                    vst1q_f32(&A[i * n + j], v_res);
+                }
+                for (; j < n; ++j) {
+                    A[i * n + j] -= factor * A[k * n + j];
+                }
+                b[i] -= factor * b[k];
+                A[i * n + k] = 0.0f;
+            }
+        }
+    }
 
+    // 回代
+    std::vector<float> x(n);
+    for (int i = n - 1; i >= 0; --i) {
+        float sum = b[i];
+        for (int j = i + 1; j < n; ++j) {
+            sum -= A[i * n + j] * x[j];
+        }
+        x[i] = sum / A[i * n + i];
+    }
+    for (int i = 0; i < n; ++i) {
+        b[i] = x[i];
+    }
+}
+
+//所有模式的性能和误差计算都在 main() 中通过注释切换，默认是模式1（串行 vs SIMD-A vs SIMD-B 多规模表格）。其他模式可以通过取消相应代码块的注释来测试。
 
 // ---------- 误差计算 ----------
 float compute_max_error(const std::vector<float>& x_comp, const std::vector<float>& x_true) {
@@ -346,7 +408,7 @@ int main(int argc, char* argv[]) {
     return 0;
     //
     */
-    // -------------------- 模式3：分块优化测试（不同块大小，建议规模 2048）--------------------
+    // -------------------- 模式3：分块优化测试（不同块大小，规模 2048）--------------------
     
     /*
     std::vector<int> block_sizes = {32, 64, 128, 256};
