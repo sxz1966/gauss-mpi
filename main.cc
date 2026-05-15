@@ -78,7 +78,45 @@ void* pthread_simd_thread_func(void* arg) {
     }
     return nullptr;
 }
+//纯标量pthread线程函数
+void* pthread_scalar_thread_func(void* arg) {
+    threadParam_t* p = (threadParam_t*)arg;
+    int t_id = p->t_id;
+    int nth = p->num_threads;
 
+    for (int k = 0; k < g_n; ++k) {
+        // 除法：只有 t_id == 0 的线程执行（标量，与 SIMD 版本相同）
+        if (t_id == 0) {
+            float pivot = g_A[k * g_n + k];
+            for (int j = k + 1; j < g_n; ++j) {
+                g_A[k * g_n + j] /= pivot;
+            }
+            g_A[k * g_n + k] = 1.0f;
+        }
+        pthread_barrier_wait(&barrier_div);
+
+        // 消去：水平划分（与 SIMD 版本相同，但内层循环是标量）
+        int rows = g_n - k - 1;
+        if (rows > 0) {
+            int rows_per_thread = (rows + nth - 1) / nth;
+            int start = k + 1 + t_id * rows_per_thread;
+            int end = start + rows_per_thread;
+            if (end > g_n) end = g_n;
+
+            for (int i = start; i < end; ++i) {
+                float factor = g_A[i * g_n + k];
+                // 标量消去：最简单的三重循环
+                for (int j = k + 1; j < g_n; ++j) {
+                    g_A[i * g_n + j] -= factor * g_A[k * g_n + j];
+                }
+                g_b[i] -= factor * g_b[k];
+                g_A[i * g_n + k] = 0.0f;
+            }
+        }
+        pthread_barrier_wait(&barrier_elim);
+    }
+    return nullptr;
+}
 // ---------- 测试数据生成 ----------
 struct TestData {
     std::vector<float> A;      // 矩阵 (n*n)
@@ -285,6 +323,7 @@ void gauss_simd_neon_v2(float* A, float* b, int n) {
     // 回代求解
     back_substitution(A, b, n);
 }
+// ========== Pthread +simd版本 ==========
 void gauss_pthread_simd(float* A, float* b, int n, int num_threads) {
     // 设置全局指针（供线程函数使用）
     g_A = A;
@@ -295,9 +334,8 @@ void gauss_pthread_simd(float* A, float* b, int n, int num_threads) {
     pthread_barrier_init(&barrier_div, nullptr, num_threads);
     pthread_barrier_init(&barrier_elim, nullptr, num_threads);
 
-    // 创建线程（包括主线程自己吗？不，主线程会参与，所以只创建 num_threads-1 个工作线程？）
-    // 指导书第16页的示例中，主线程也作为线程池的一部分，但主线程不创建自己。
-    // 正确做法：创建 num_threads 个线程，主线程也执行线程函数，但需要让主线程也调用线程函数。
+    
+    // 创建 num_threads 个线程，主线程也执行线程函数，但需要让主线程也调用线程函数。
     // 为避免主线程阻塞在 pthread_join，通常只创建 num_threads-1 个子线程，主线程直接执行线程函数。
     // 下面采用推荐方式：创建 num_threads-1 个子线程，主线程自己执行线程函数（作为最后一个线程）。
     std::vector<pthread_t> threads(num_threads - 1);
@@ -328,6 +366,39 @@ void gauss_pthread_simd(float* A, float* b, int n, int num_threads) {
     // 回代
     back_substitution(A, b, n);
 }
+// ========== Pthread 纯标量版本 ==========
+void gauss_pthread(float* A, float* b, int n, int num_threads) {
+    g_A = A;
+    g_b = b;
+    g_n = n;
+
+    pthread_barrier_init(&barrier_div, nullptr, num_threads);
+    pthread_barrier_init(&barrier_elim, nullptr, num_threads);
+
+    std::vector<pthread_t> threads(num_threads - 1);
+    std::vector<threadParam_t> params(num_threads);
+
+    for (int i = 0; i < num_threads - 1; ++i) {
+        params[i].t_id = i;
+        params[i].num_threads = num_threads;
+        pthread_create(&threads[i], nullptr, pthread_scalar_thread_func, &params[i]);
+    }
+
+    threadParam_t main_param;
+    main_param.t_id = num_threads - 1;
+    main_param.num_threads = num_threads;
+    pthread_scalar_thread_func(&main_param);
+
+    for (int i = 0; i < num_threads - 1; ++i) {
+        pthread_join(threads[i], nullptr);
+    }
+
+    pthread_barrier_destroy(&barrier_div);
+    pthread_barrier_destroy(&barrier_elim);
+
+    back_substitution(A, b, n);
+}
+
 
 // ---------- 分块优化版本 --------//
 void gauss_blocked_simd(float* A, float* b, int n, int block_size) {
