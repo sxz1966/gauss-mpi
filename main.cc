@@ -7,9 +7,17 @@
 #include <arm_neon.h>   // NEON 头文件
 #include <cstring>   // for std::memcpy
 #include <cstdlib>   // for aligned_alloc, free
-
-
-
+#include <pthread.h>    // Pthread 库
+#include <semaphore.h>  // 信号量
+// 全局变量，供 Pthread 线程函数访问
+float* g_A = nullptr;
+float* g_b = nullptr;
+int g_n = 0;
+// Pthread 线程参数结构体
+typedef struct {
+    int t_id;           // 线程 ID (0 ~ num_threads-1)
+    int num_threads;    // 总线程数
+} threadParam_t;
 
 // ---------- 测试数据生成 ----------
 struct TestData {
