@@ -550,54 +550,223 @@ float compute_max_error(const std::vector<float>& x_comp, const std::vector<floa
     return max_err;
 }
 
+// ---------- 主函数（通过注释切换测试内容） ----------
 int main(int argc, char* argv[]) {
-    // 参数解析
-    if (argc < 3) {
-        std::cerr << "Usage: " << argv[0] << " <n> <version> [num_threads]\n";
-        std::cerr << "  version: serial, simd, simd_v2, pthread, pthread_simd, omp, omp_simd, blocked\n";
-        return 1;
+    // 解析命令行参数，默认规模为 1024（perf 模式通常固定一个规模）
+    int n = 1024;
+    if (argc >= 2) {
+        n = std::atoi(argv[1]);
     }
-    int n = std::atoi(argv[1]);
-    std::string version = argv[2];
-    int num_threads = (argc >= 4) ? std::atoi(argv[3]) : 1;
 
-    // 生成测试数据
+    std::cout << std::fixed << std::setprecision(3);
+    
+
     TestData data = generate_data(n);
-    std::vector<float> A = data.A;
-    std::vector<float> b = data.b;
 
-    auto t1 = std::chrono::high_resolution_clock::now();
+    
 
-    if (version == "serial") {
-        gauss_serial(A.data(), b.data(), n);
-    } else if (version == "simd") {
-        gauss_simd_neon(A.data(), b.data(), n);
-    } else if (version == "simd_v2") {
-        gauss_simd_neon_v2(A.data(), b.data(), n);
-    } else if (version == "pthread") {
-        gauss_pthread(A.data(), b.data(), n, num_threads);
-    } else if (version == "pthread_simd") {
-        gauss_pthread_simd(A.data(), b.data(), n, num_threads);
-    } else if (version == "omp") {
-        gauss_omp(A.data(), b.data(), n, num_threads);
-    } else if (version == "omp_simd") {
-        gauss_omp_simd(A.data(), b.data(), n, num_threads);
-    } else if (version == "blocked") {
-        int block_size = (argc >= 5) ? std::atoi(argv[4]) : 64;
-        gauss_blocked_simd(A.data(), b.data(), n, block_size);
-    } else {
-        std::cerr << "Unknown version: " << version << "\n";
-        return 1;
+    // -------------------- 模式1：串行 vs SIMD-A vs SIMD-B（多规模自动表格）--------------------
+    //测试不同规模下的性能和误差，规模 512, 1024, 2048
+   /* 
+    std::vector<int> sizes = {512, 1024, 2048};
+    std::cout << "\n===============================================================================\n";
+    std::cout << "  Gaussian Elimination Final Benchmark (Serial vs SIMD-A vs SIMD-B)\n";
+    std::cout << "===============================================================================\n";
+    std::cout << "Size\tSerial(ms)\tSIMD-A(ms)\tSpeedup-A\tSIMD-B(ms)\tSpeedup-B\tMaxError\n";
+    for (int sz : sizes) {
+        TestData d = generate_data(sz);
+        // 串行
+        std::vector<float> A_ser = d.A;
+        std::vector<float> b_ser = d.b;
+        auto t1 = std::chrono::high_resolution_clock::now();
+        gauss_serial(A_ser.data(), b_ser.data(), sz);
+        auto t2 = std::chrono::high_resolution_clock::now();
+        double time_ser = std::chrono::duration<double, std::milli>(t2 - t1).count();
+        // SIMD-A
+        std::vector<float> A_simdA = d.A;
+        std::vector<float> b_simdA = d.b;
+        t1 = std::chrono::high_resolution_clock::now();
+        gauss_simd_neon(A_simdA.data(), b_simdA.data(), sz);
+        t2 = std::chrono::high_resolution_clock::now();
+        double time_simdA = std::chrono::duration<double, std::milli>(t2 - t1).count();
+        // SIMD-B
+        std::vector<float> A_simdB = d.A;
+        std::vector<float> b_simdB = d.b;
+        t1 = std::chrono::high_resolution_clock::now();
+        gauss_simd_neon_v2(A_simdB.data(), b_simdB.data(), sz);
+        t2 = std::chrono::high_resolution_clock::now();
+        double time_simdB = std::chrono::duration<double, std::milli>(t2 - t1).count();
+
+        float err = compute_max_error(b_simdB, d.x_true);
+        float speedupA = time_ser / time_simdA;
+        float speedupB = time_ser / time_simdB;
+        std::cout << sz << "\t" << time_ser << "\t\t" << time_simdA << "\t\t"
+                  << speedupA << "x\t\t" << time_simdB << "\t\t" << speedupB << "x\t\t"
+                  << std::scientific << err << "\n";
     }
+    std::cout << "===============================================================================\n";
+    return 0;
+    */
 
+    // -------------------- 模式2：对齐 vs 不对齐（单独测试，固定规模 1024）--------------------
+    
+   /*
+    std::cout << "\n--- Aligned vs Unaligned Comparison (n = " << n << ") ---\n";
+    // 不对齐版本（使用 std::vector）
+    std::vector<float> A_un = data.A;
+    std::vector<float> b_un = data.b;
+    auto t1 = std::chrono::high_resolution_clock::now();
+    gauss_simd_neon(A_un.data(), b_un.data(), n);
     auto t2 = std::chrono::high_resolution_clock::now();
-    double time_ms = std::chrono::duration<double, std::milli>(t2 - t1).count();
+    double time_un = std::chrono::duration<double, std::milli>(t2 - t1).count();
+    float err_un = compute_max_error(b_un, data.x_true);
+    std::cout << "SIMD-Unaligned time: " << time_un << " ms, error: " << std::scientific << err_un << "\n";
 
-    float error = compute_max_error(b, data.x_true);
+    // 对齐版本（使用 aligned_alloc）
+    float* A_al = aligned_alloc_float(n * n);
+    float* b_al = aligned_alloc_float(n);
+    std::memcpy(A_al, data.A.data(), n * n * sizeof(float));
+    std::memcpy(b_al, data.b.data(), n * sizeof(float));
+    t1 = std::chrono::high_resolution_clock::now();
+    gauss_simd_neon_aligned(A_al, b_al, n);
+    t2 = std::chrono::high_resolution_clock::now();
+    double time_al = std::chrono::duration<double, std::milli>(t2 - t1).count();
+    std::vector<float> x_al(n);
+    std::memcpy(x_al.data(), b_al, n * sizeof(float));
+    float err_al = compute_max_error(x_al, data.x_true);
+    std::cout << "SIMD-Aligned time:   " << time_al << " ms, error: " << std::scientific << err_al << "\n";
+    free(A_al);
+    free(b_al);
+    return 0;
+    //
+    */
+    // -------------------- 模式3：分块优化测试（不同块大小，规模 2048）--------------------
+    
+    /*
+    std::vector<int> block_sizes = {32, 64, 128, 256};
+    std::cout << "\n--- Blocked SIMD Results (n = " << n << ") ---\n";
+    std::cout << "BlockSize\tTime(ms)\t\tMaxError\n";
+    for (int bs : block_sizes) {
+        std::vector<float> A_blk = data.A;
+        std::vector<float> b_blk = data.b;
+        auto t1 = std::chrono::high_resolution_clock::now();
+        gauss_blocked_simd(A_blk.data(), b_blk.data(), n, bs);
+        auto t2 = std::chrono::high_resolution_clock::now();
+        double time_ms = std::chrono::duration<double, std::milli>(t2 - t1).count();
+        float err = compute_max_error(b_blk, data.x_true);
+        std::cout << bs << "\t\t" << time_ms << "\t\t" << std::scientific << err << "\n";
+    }
+    return 0;
+    */
 
-    // 输出格式：时间(ms) 误差（科学计数法），便于 test.sh 收集
-    std::cout << std::fixed << std::setprecision(3) << time_ms << " "
-              << std::scientific << std::setprecision(6) << error << std::endl;
+    // -------------------- 模式4： perf 串行--------------------
+    
+    /*
+    std::vector<float> A_ser = data.A;
+    std::vector<float> b_ser = data.b;
+    gauss_serial(A_ser.data(), b_ser.data(), n);
+    std::cout << "Serial done. Error: " << std::scientific << compute_max_error(b_ser, data.x_true) << "\n";
+    return 0;
+    //
+    */
+    // -------------------- 模式5：perf SIMD-A（仅消去向量化，不对齐）--------------------
+    /*
+    std::vector<float> A_simd = data.A;
+    std::vector<float> b_simd = data.b;
+    gauss_simd_neon(A_simd.data(), b_simd.data(), n);
+    std::cout << "SIMD-A done. Error: " << std::scientific << compute_max_error(b_simd, data.x_true) << "\n";
+    return 0;
+    //
+     */
+    // -------------------- 模式6：perf SIMD-B（除法+消去均向量化）--------------------
+    /*
+    std::vector<float> A_v2 = data.A;
+    std::vector<float> b_v2 = data.b;
+    gauss_simd_neon_v2(A_v2.data(), b_v2.data(), n);
+    std::cout << "SIMD-B done. Error: " << std::scientific << compute_max_error(b_v2, data.x_true) << "\n";
+    return 0;
+    //
+    */
+    // -------------------- 模式7： perf SIMD-对齐（对齐内存分配）--------------------
+    /*
+    float* A_al = aligned_alloc_float(n * n);
+    float* b_al = aligned_alloc_float(n);
+    std::memcpy(A_al, data.A.data(), n * n * sizeof(float));
+    std::memcpy(b_al, data.b.data(), n * sizeof(float));
+    gauss_simd_neon_aligned(A_al, b_al, n);
+    std::vector<float> x_al(n);
+    std::memcpy(x_al.data(), b_al, n * sizeof(float));
+    std::cout << "SIMD-Aligned done. Error: " << std::scientific << compute_max_error(x_al, data.x_true) << "\n";
+    free(A_al);
+    free(b_al);
+    return 0;
+    //
+    */
+        // -------------------- 模式8： perf 专用（分块优化，固定块大小）--------------------
+    
+    /*
+    int block_size = 64;   // 可手动修改为 32, 64, 128, 256 等
+    std::vector<float> A_blk = data.A;
+    std::vector<float> b_blk = data.b;
+    gauss_blocked_simd(A_blk.data(), b_blk.data(), n, block_size);
+    std::cout << "Blocked SIMD (bs=" << block_size << ") done. Error: "
+              << std::scientific << compute_max_error(b_blk, data.x_true) << "\n";
+    return 0;
+    //*/
+    // -------------------- 模式9：多线程综合测试（Pthread + OpenMP）--------------------
 
+    std::cout << "\n================== Multi-threading Benchmark (Pthread & OpenMP) ==================\n";
+    std::vector<int> sizes = {512, 1024, 2048};
+    std::vector<int> thread_counts = {2, 4, 8};  // 测试2,4,8线程
+    // 表头
+    std::cout << "Size\tThreads\tPthread_Scalar(ms)\tPthread_SIMD(ms)\tOpenMP_Scalar(ms)\tOpenMP_SIMD(ms)\tMaxError\n";
+    for (int sz : sizes) {
+        TestData d = generate_data(sz);
+        for (int t : thread_counts) {
+            // Pthread 纯标量
+            std::vector<float> A_pt_scalar = d.A;
+            std::vector<float> b_pt_scalar = d.b;
+            auto t1 = std::chrono::high_resolution_clock::now();
+            gauss_pthread(A_pt_scalar.data(), b_pt_scalar.data(), sz, t);
+            auto t2 = std::chrono::high_resolution_clock::now();
+            double time_pt_scalar = std::chrono::duration<double, std::milli>(t2 - t1).count();
+
+            // Pthread + SIMD
+            std::vector<float> A_pt_simd = d.A;
+            std::vector<float> b_pt_simd = d.b;
+            t1 = std::chrono::high_resolution_clock::now();
+            gauss_pthread_simd(A_pt_simd.data(), b_pt_simd.data(), sz, t);
+            t2 = std::chrono::high_resolution_clock::now();
+            double time_pt_simd = std::chrono::duration<double, std::milli>(t2 - t1).count();
+
+            // OpenMP 纯标量
+            std::vector<float> A_omp_scalar = d.A;
+            std::vector<float> b_omp_scalar = d.b;
+            t1 = std::chrono::high_resolution_clock::now();
+            gauss_omp(A_omp_scalar.data(), b_omp_scalar.data(), sz, t);
+            t2 = std::chrono::high_resolution_clock::now();
+            double time_omp_scalar = std::chrono::duration<double, std::milli>(t2 - t1).count();
+
+            // OpenMP + SIMD
+            std::vector<float> A_omp_simd = d.A;
+            std::vector<float> b_omp_simd = d.b;
+            t1 = std::chrono::high_resolution_clock::now();
+            gauss_omp_simd(A_omp_simd.data(), b_omp_simd.data(), sz, t);
+            t2 = std::chrono::high_resolution_clock::now();
+            double time_omp_simd = std::chrono::duration<double, std::milli>(t2 - t1).count();
+
+            // 误差（以 OpenMP+SIMD 的结果为准，也可任选）
+            float err = compute_max_error(b_omp_simd, d.x_true);
+            std::cout << sz << "\t" << t << "\t"
+                      << time_pt_scalar << "\t\t" << time_pt_simd << "\t\t"
+                      << time_omp_scalar << "\t\t" << time_omp_simd << "\t\t"
+                      << std::scientific << err << "\n";
+        }
+    }
+    std::cout << "================================================================================\n";
+    return 0;
+
+    // -------------------- 默认模式（防止所有模式都被注释时报错）--------------------
+    std::cout << "Please uncomment one of the test modes in main()!\n";
     return 0;
 }
