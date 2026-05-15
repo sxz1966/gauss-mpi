@@ -59,7 +59,20 @@ TestData generate_data(int n) {
     }
     return data;
 }
-
+// ---------- 回代函数 ----------
+void back_substitution(float* A, float* b, int n) {
+    std::vector<float> x(n);
+    for (int i = n - 1; i >= 0; --i) {
+        float sum = b[i];
+        for (int j = i + 1; j < n; ++j) {
+            sum -= A[i * n + j] * x[j];
+        }
+        x[i] = sum / A[i * n + i];
+    }
+    for (int i = 0; i < n; ++i) {
+        b[i] = x[i];
+    }
+}
 
 //添加 对齐内存分配辅助函数
 float* aligned_alloc_float(size_t n) {
@@ -91,19 +104,10 @@ void gauss_simd_neon_aligned(float* A, float* b, int n) {
             A[i * n + k] = 0.0f;
         }
     }
-    // 回代
-    std::vector<float> x(n);
-    for (int i = n - 1; i >= 0; --i) {
-        float sum = b[i];
-        for (int j = i + 1; j < n; ++j) {
-            sum -= A[i * n + j] * x[j];
-        }
-        x[i] = sum / A[i * n + i];
-    }
-    for (int i = 0; i < n; ++i) {
-        b[i] = x[i];
-    }
+        // 回代求解
+    back_substitution(A, b, n);
 }
+
 
 // ---------- 串行高斯消去（单精度） ----------
 void gauss_serial(float* A, float* b, int n) {
@@ -119,19 +123,10 @@ void gauss_serial(float* A, float* b, int n) {
             A[i * n + k] = 0.0f;
         }
     }
-    // 回代求解
-    std::vector<float> x(n);
-    for (int i = n - 1; i >= 0; --i) {
-        float sum = b[i];
-        for (int j = i + 1; j < n; ++j) {
-            sum -= A[i * n + j] * x[j];
-        }
-        x[i] = sum / A[i * n + i];
-    }
-    for (int i = 0; i < n; ++i) {
-        b[i] = x[i];
-    }
+        // 回代求解
+    back_substitution(A, b, n);
 }
+
 
 // ---------- NEON SIMD 高斯消去 版本A 向量化消去  不对齐----------
 void gauss_simd_neon(float* A, float* b, int n) {
@@ -163,18 +158,8 @@ void gauss_simd_neon(float* A, float* b, int n) {
         }
     }
 
-    // 回代求解（与串行相同，计算量小，不向量化）
-    std::vector<float> x(n);
-    for (int i = n - 1; i >= 0; --i) {
-        float sum = b[i];
-        for (int j = i + 1; j < n; ++j) {
-            sum -= A[i * n + j] * x[j];
-        }
-        x[i] = sum / A[i * n + i];
-    }
-    for (int i = 0; i < n; ++i) {
-        b[i] = x[i];
-    }
+        // 回代求解
+    back_substitution(A, b, n);
 }
 
 
@@ -229,19 +214,10 @@ void gauss_simd_neon_v2(float* A, float* b, int n) {
         }
     }
 
-    // 回代（同串行）
-    std::vector<float> x(n);
-    for (int i = n - 1; i >= 0; --i) {
-        float sum = b[i];
-        for (int j = i + 1; j < n; ++j) {
-            sum -= A[i * n + j] * x[j];
-        }
-        x[i] = sum / A[i * n + i];
-    }
-    for (int i = 0; i < n; ++i) {
-        b[i] = x[i];
-    }
+    // 回代求解
+    back_substitution(A, b, n);
 }
+
 
 // ---------- 分块优化版本 --------//
 void gauss_blocked_simd(float* A, float* b, int n, int block_size) {
@@ -293,19 +269,10 @@ void gauss_blocked_simd(float* A, float* b, int n, int block_size) {
         }
     }
 
-    // 回代
-    std::vector<float> x(n);
-    for (int i = n - 1; i >= 0; --i) {
-        float sum = b[i];
-        for (int j = i + 1; j < n; ++j) {
-            sum -= A[i * n + j] * x[j];
-        }
-        x[i] = sum / A[i * n + i];
-    }
-    for (int i = 0; i < n; ++i) {
-        b[i] = x[i];
-    }
+        // 回代求解
+    back_substitution(A, b, n);
 }
+
 
 //所有模式的性能和误差计算都在 main() 中通过注释切换，默认是模式1（串行 vs SIMD-A vs SIMD-B 多规模表格）。其他模式可以通过取消相应代码块的注释来测试。
 
