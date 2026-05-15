@@ -1,11 +1,12 @@
+============================================================
+Gaussian Elimination Benchmark (Scalar Pthread & OpenMP)
+Matrix size: 2048 x 2048
+Threads: 8
+============================================================
 
-===============================================================================
-  Gaussian Elimination Final Benchmark (Serial vs SIMD-A vs SIMD-B)
-===============================================================================
-Size	Serial(ms)	SIMD-A(ms)	Speedup-A	SIMD-B(ms)	Speedup-B	MaxError
-512	48.384		16.418		2.947x		17.186		2.815x		2.384e-06
-1024	4.003e+02		1.363e+02		2.936e+00x		1.389e+02		2.881e+00x		2.444e-06
-2048	3.501e+03		1.107e+03		3.164e+00x		1.122e+03		3.120e+00x		4.888e-06
-===============================================================================
+Serial       : 1129.522 ms, error = 3.994e-06
+Pthread      : 1.188e+03 ms, error = 0.000e+00, speedup = 0.95x
+OpenMP       : 987.73 ms, error = 0.00e+00, speedup = 1.14x
+============================================================
 
 Authorized users only. All activities may be monitored and reported.

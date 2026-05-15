@@ -1,0 +1,5 @@
+main
+*.o
+test.e
+test.o
+
