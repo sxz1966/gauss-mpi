@@ -1,12 +1,81 @@
 ============================================================
-Gaussian Elimination Benchmark (Scalar Pthread & OpenMP)
-Matrix size: 2048 x 2048
-Threads: 8
+ Gaussian Elimination with Pthread/OpenMP + NEON SIMD
 ============================================================
 
-Serial       : 1129.522 ms, error = 3.994e-06
-Pthread      : 1.188e+03 ms, error = 0.000e+00, speedup = 0.95x
-OpenMP       : 987.73 ms, error = 0.00e+00, speedup = 1.14x
+----------- Matrix Size: 512 x 512 -----------
+Serial (baseline) time = 18.885 ms, error = 2.205e-06
+
+--- Threads = 1 ---
+  Pthread cyclic   : 1.936e+01 ms, error = 2.205e-06, speedup = 0.98x
+  Pthread block    : 20.39 ms, error = 2.21e-06, speedup = 0.93x
+  OpenMP cyclic    : 20.66 ms, error = 2.21e-06, speedup = 0.91x
+
+--- Threads = 2 ---
+  Pthread cyclic   : 89.65 ms, error = 2.21e-06, speedup = 0.21x
+  Pthread block    : 21.28 ms, error = 2.21e-06, speedup = 0.89x
+  OpenMP cyclic    : 90.81 ms, error = 2.21e-06, speedup = 0.21x
+
+--- Threads = 4 ---
+  Pthread cyclic   : 45.05 ms, error = 2.21e-06, speedup = 0.42x
+  Pthread block    : 18.50 ms, error = 2.21e-06, speedup = 1.02x
+  OpenMP cyclic    : 45.48 ms, error = 2.21e-06, speedup = 0.42x
+
+--- Threads = 8 ---
+  Pthread cyclic   : 42.73 ms, error = 2.21e-06, speedup = 0.44x
+  Pthread block    : 28.19 ms, error = 2.21e-06, speedup = 0.67x
+  OpenMP cyclic    : 23.58 ms, error = 2.21e-06, speedup = 0.80x
+
 ============================================================
+
+----------- Matrix Size: 1024 x 1024 -----------
+Serial (baseline) time = 149.98 ms, error = 2.50e-06
+
+--- Threads = 1 ---
+  Pthread cyclic   : 1.45e+02 ms, error = 2.50e-06, speedup = 1.04x
+  Pthread block    : 146.19 ms, error = 2.50e-06, speedup = 1.03x
+  OpenMP cyclic    : 146.95 ms, error = 2.50e-06, speedup = 1.02x
+
+--- Threads = 2 ---
+  Pthread cyclic   : 254.09 ms, error = 2.50e-06, speedup = 0.59x
+  Pthread block    : 148.54 ms, error = 2.50e-06, speedup = 1.01x
+  OpenMP cyclic    : 592.34 ms, error = 2.50e-06, speedup = 0.25x
+
+--- Threads = 4 ---
+  Pthread cyclic   : 304.66 ms, error = 2.50e-06, speedup = 0.49x
+  Pthread block    : 93.32 ms, error = 2.50e-06, speedup = 1.61x
+  OpenMP cyclic    : 311.69 ms, error = 2.50e-06, speedup = 0.48x
+
+--- Threads = 8 ---
+  Pthread cyclic   : 198.11 ms, error = 2.50e-06, speedup = 0.76x
+  Pthread block    : 79.88 ms, error = 2.50e-06, speedup = 1.88x
+  OpenMP cyclic    : 163.63 ms, error = 2.50e-06, speedup = 0.92x
+
+============================================================
+
+----------- Matrix Size: 2048 x 2048 -----------
+Serial (baseline) time = 2429.57 ms, error = 4.53e-06
+
+--- Threads = 1 ---
+  Pthread cyclic   : 2.49e+03 ms, error = 4.53e-06, speedup = 0.98x
+  Pthread block    : 2461.50 ms, error = 4.53e-06, speedup = 0.99x
+  OpenMP cyclic    : 2464.29 ms, error = 4.53e-06, speedup = 0.99x
+
+--- Threads = 2 ---
+  Pthread cyclic   : 2950.87 ms, error = 4.53e-06, speedup = 0.82x
+  Pthread block    : 1277.70 ms, error = 4.53e-06, speedup = 1.90x
+  OpenMP cyclic    : 2764.47 ms, error = 4.53e-06, speedup = 0.88x
+
+--- Threads = 4 ---
+  Pthread cyclic   : 1866.80 ms, error = 4.53e-06, speedup = 1.30x
+  Pthread block    : 597.59 ms, error = 4.53e-06, speedup = 4.07x
+  OpenMP cyclic    : 1730.69 ms, error = 4.53e-06, speedup = 1.40x
+
+--- Threads = 8 ---
+  Pthread cyclic   : 1054.66 ms, error = 4.53e-06, speedup = 2.30x
+  Pthread block    : 372.87 ms, error = 4.53e-06, speedup = 6.52x
+  OpenMP cyclic    : 922.35 ms, error = 4.53e-06, speedup = 2.63x
+
+============================================================
+
 
 Authorized users only. All activities may be monitored and reported.
