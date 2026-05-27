@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <random>
 #include <cmath>
 #include <cstring>
 #include <cstdlib>
@@ -8,13 +9,38 @@
 
 using namespace std;
 
-// 与之前相同的初始化函数（保证对角占优）
+// 生成随机对角占优矩阵（与之前实验一致）
 void init_matrix(float* A, float* b, int n) {
-    // 此处复制你之前 generate_data 的核心逻辑，但只分配内存并填充
-    // 为了简洁，假设已实现
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_real_distribution<float> dis(-1.0f, 1.0f);
+    
+    // 生成随机解 x_true
+    vector<float> x_true(n);
+    for (int i = 0; i < n; i++) x_true[i] = dis(gen);
+    
+    // 生成严格对角占优矩阵
+    for (int i = 0; i < n; i++) {
+        float row_sum = 0.0f;
+        for (int j = 0; j < n; j++) {
+            if (i != j) {
+                float val = dis(gen);
+                A[i * n + j] = val;
+                row_sum += fabs(val);
+            }
+        }
+        A[i * n + i] = row_sum + 1.0f;
+    }
+    
+    // 计算 b = A * x_true
+    for (int i = 0; i < n; i++) {
+        float sum = 0.0f;
+        for (int j = 0; j < n; j++) sum += A[i * n + j] * x_true[j];
+        b[i] = sum;
+    }
 }
 
-// 回代（仅用0号进程的完整矩阵）
+// 回代（使用完整矩阵）
 void back_substitution(float* A, float* b, int n) {
     for (int i = n-1; i >= 0; --i) {
         float sum = b[i];
@@ -29,10 +55,10 @@ int main(int argc, char* argv[]) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    int n = 2048;  // 可以从命令行参数读取
+    int n = 1024;  // 默认规模，可从命令行参数读取
     if (argc > 1) n = atoi(argv[1]);
 
-    // 每个进程都分配完整的矩阵和b（全复制版）
+    // 每个进程都分配完整的矩阵和b（全复制版，便于通信）
     float* A = (float*)aligned_alloc(64, n * n * sizeof(float));
     float* b = (float*)aligned_alloc(64, n * sizeof(float));
 
@@ -43,7 +69,7 @@ int main(int argc, char* argv[]) {
     MPI_Bcast(A, n*n, MPI_FLOAT, 0, MPI_COMM_WORLD);
     MPI_Bcast(b, n, MPI_FLOAT, 0, MPI_COMM_WORLD);
 
-    // 计算每个进程负责的行范围（连续块划分）
+    // 每个进程负责的行范围（连续块划分）
     int rows_per_proc = n / size;
     int remainder = n % size;
     int start_row, end_row;
@@ -102,8 +128,8 @@ int main(int argc, char* argv[]) {
                 A[i * n + j] -= factor * A[k * n + j];
             }
             A[i * n + k] = 0.0f;
-            // 本地b向量更新（如果需要）
-            // 注意：b向量的更新也需要对应行，这里省略简化
+            // 更新b向量（对应行）
+            b[i] -= factor * b[k];
         }
     }
 
@@ -112,7 +138,8 @@ int main(int argc, char* argv[]) {
     if (rank == 0) {
         back_substitution(A, b, n);
         cout << "MPI time with " << size << " procs: " << (end_time - start_time)*1000 << " ms" << endl;
-        // 可以输出误差检查正确性
+        
+        // 可选：打印误差（需事先保存x_true，此处省略）
     }
 
     free(A);
