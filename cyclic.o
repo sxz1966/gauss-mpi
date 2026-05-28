@@ -1,0 +1,31 @@
+n,mpi_procs,omp_threads,time_ms
+Cyclic partition: MPI processes = 1, OpenMP threads per process = 1
+512,1,1,18.316
+Cyclic partition: MPI processes = 2, OpenMP threads per process = 1
+512,2,1,13.983
+Cyclic partition: MPI processes = 4, OpenMP threads per process = 1
+512,4,1,10.021
+Cyclic partition: MPI processes = 8, OpenMP threads per process = 1
+512,8,1,6.342
+Cyclic partition: MPI processes = 16, OpenMP threads per process = 1
+512,16,1,35.271
+Cyclic partition: MPI processes = 1, OpenMP threads per process = 1
+1024,1,1,148.529
+Cyclic partition: MPI processes = 2, OpenMP threads per process = 1
+1024,2,1,97.393
+Cyclic partition: MPI processes = 4, OpenMP threads per process = 1
+1024,4,1,66.395
+Cyclic partition: MPI processes = 8, OpenMP threads per process = 1
+1024,8,1,30.892
+Cyclic partition: MPI processes = 16, OpenMP threads per process = 1
+1024,16,1,53.509
+Cyclic partition: MPI processes = 1, OpenMP threads per process = 1
+2048,1,1,1686.486
+Cyclic partition: MPI processes = 2, OpenMP threads per process = 1
+2048,2,1,657.127
+Cyclic partition: MPI processes = 4, OpenMP threads per process = 1
+2048,4,1,532.835
+Cyclic partition: MPI processes = 8, OpenMP threads per process = 1
+2048,8,1,320.840
+Cyclic partition: MPI processes = 16, OpenMP threads per process = 1
+2048,16,1,196.398
