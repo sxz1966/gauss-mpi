@@ -239,7 +239,7 @@ int main(int argc, char* argv[]) {
     std::vector<int> sizes = {512, 1024, 2048};
     std::vector<int> thread_counts = {1, 2, 4, 8};
 
-    // 如果提供了命令行参数，可以覆盖部分设置（简单处理）
+    
     if (argc >= 2) {
         sizes.clear();
         sizes.push_back(std::atoi(argv[1]));
