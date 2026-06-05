@@ -1,0 +1,16 @@
+n,mpi_procs,time_ms
+Non-blocking, n=512, procs=1, time=17.665 ms
+Non-blocking, n=512, procs=2, time=14.783 ms
+Non-blocking, n=512, procs=4, time=11.016 ms
+Non-blocking, n=512, procs=8, time=12.700 ms
+Non-blocking, n=512, procs=16, time=120.604 ms
+Non-blocking, n=1024, procs=1, time=145.599 ms
+Non-blocking, n=1024, procs=2, time=108.867 ms
+Non-blocking, n=1024, procs=4, time=66.473 ms
+Non-blocking, n=1024, procs=8, time=47.761 ms
+Non-blocking, n=1024, procs=16, time=274.645 ms
+Non-blocking, n=2048, procs=1, time=1937.042 ms
+Non-blocking, n=2048, procs=2, time=1495.773 ms
+Non-blocking, n=2048, procs=4, time=646.128 ms
+Non-blocking, n=2048, procs=8, time=314.393 ms
+Non-blocking, n=2048, procs=16, time=728.216 ms

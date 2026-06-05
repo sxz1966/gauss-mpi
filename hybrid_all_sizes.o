@@ -1,0 +1,25 @@
+n,mpi_procs,omp_threads,time_ms
+Hybrid MPI+OpenMP: 1 processes, 8 threads per process
+512,1,8,7.420
+Hybrid MPI+OpenMP: 2 processes, 4 threads per process
+512,2,4,6.830
+Hybrid MPI+OpenMP: 4 processes, 2 threads per process
+512,4,2,7.891
+Hybrid MPI+OpenMP: 8 processes, 1 threads per process
+512,8,1,5.478
+Hybrid MPI+OpenMP: 1 processes, 8 threads per process
+1024,1,8,30.773
+Hybrid MPI+OpenMP: 2 processes, 4 threads per process
+1024,2,4,32.852
+Hybrid MPI+OpenMP: 4 processes, 2 threads per process
+1024,4,2,34.165
+Hybrid MPI+OpenMP: 8 processes, 1 threads per process
+1024,8,1,30.992
+Hybrid MPI+OpenMP: 1 processes, 8 threads per process
+2048,1,8,189.748
+Hybrid MPI+OpenMP: 2 processes, 4 threads per process
+2048,2,4,248.140
+Hybrid MPI+OpenMP: 4 processes, 2 threads per process
+2048,4,2,266.457
+Hybrid MPI+OpenMP: 8 processes, 1 threads per process
+2048,8,1,250.164
